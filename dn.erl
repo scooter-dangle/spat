@@ -14,7 +14,10 @@ move(_, {XSign, _}, {X, Y}) ->
 
 loop(State) ->
   receive %% Hunt for the most recent address message.
-    _ -> true
+    {recent_msg, Pid} ->
+      Pid ! most_recent_message(),
+      loop(State);
+    kill -> true
   end.
 
 
@@ -22,4 +25,29 @@ sleep(T) ->
   receive
   after T -> true
   end.
+
+
+most_recent_message() ->
+  RefTup = {ref, make_ref()},
+  self() ! RefTup,
+  receive
+    RefTup2 when RefTup =:= RefTup2 -> false;
+    Message ->
+      most_recent_message(RefTup, [Message])
+  end.
+
+most_recent_message(RefTup, MsgCache=[MostRecentMsg|TheRest]) ->
+  receive
+    RefTup2 when RefTup =:= RefTup2 ->
+      sendBack(TheRest),
+      MostRecentMsg;
+    Message ->
+      most_recent_message(RefTup, [Message|MsgCache])
+  end.
+
+sendBack([]) -> ok;
+sendBack([H|T]) ->
+  self() ! H,
+  sendBack(T).
+
 
