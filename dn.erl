@@ -1,7 +1,7 @@
 -module(dn).
 -compile(export_all).
 
--record(move, {slope, dir, state}).
+-record(move, {slope, dir, state, time}).
 -record(speck, {pid, xy, move = #move{}}).
 
 
@@ -13,6 +13,8 @@ move(Move=#move{{_, YSign}=dir, {0, Y}=state}) ->
 
 move(Move=#move{{XSign, _}=dir, {X, Y}=state}) ->
   { {x, XSign}, Move#move{state={X-1, Y}} }.
+
+
 
 
 internal_collision(_, []) -> false;
@@ -42,15 +44,16 @@ in_self(NewXY, #region{Origin=point, SideLength=side_length}) ->
 %%   end.
  
  
-loop(T) ->
+loop(Move, SleepTime, Region) ->
   CurrentTime = time:now(),
   receive
     collision ->
       %%stuff
       loop(T - time:now());
-  after T ->
-      move(),
-      loop(T)
+  after SleepTime ->
+      {Msg, NewMove#move{}} = move(Move),
+      Region ! Msg,
+      loop(NewMove, SleepTime, Region)
   end.
 
 
