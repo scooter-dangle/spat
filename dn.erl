@@ -1,31 +1,59 @@
 -module(dn).
 -compile(export_all).
 
-
-move(Slope, SlopeSign, {0, 0}) ->
-  move(Slope, SlopeSign, Slope);
-
-move(_, {_, YSign}, {0, Y}) ->
-  {{y, YSign}, {0, Y-1}};
-
-move(_, {XSign, _}, {X, Y}) ->
-  {{x, XSign}, {X-1, Y}}.
+-record(move, {slope, dir, state}).
+-record(speck, {pid, xy, move = #move{}}).
 
 
-loop(State) ->
+move(Move=#move{Slope=slope, SlopeSign=dir, {0, 0}=state}) ->
+  move(Move#move{state=Slope});
+
+move(Move=#move{{_, YSign}=dir, {0, Y}=state}) ->
+  { {y, YSign}, Move#move{state={0, Y-1}} };
+
+move(Move=#move{{XSign, _}=dir, {X, Y}=state}) ->
+  { {x, XSign}, Move#move{state={X-1, Y}} }.
+
+
+internal_collision(_, []) -> false;
+internal_collision(NewXY, SpeckList) ->
+  lists:keyfind(NewXY, 2, SpeckList).
+
+internal_update(false, {Pid, NewXY}, SpeckList) ->
+  lists:keyreplace(Pid, 1, SpeckList, {Pid, NewXY});
+
+internal_update({OtherPid, OtherXY}, {Pid, NewXY}, SpeckList) ->
+  OtherPid ! Pid ! collision,
+  SpeckList.
+
+new_xy({X, Y}, x, Sign) -> {X + Sign, Y};
+new_xy({X, Y}, y, Sign) -> {X, Y + Sign}.
+
+in_self(NewXY, #region{Origin=point, SideLength=side_length}) ->
+  
+
+%% loop(State) ->
+%%   receive
+%%     %% Hunt for the most recent address message.
+%%     {recent_msg, Pid} ->
+%%       Pid ! most_recent_message(),
+%%       loop(State);
+%%     kill -> true
+%%   end.
+ 
+ 
+loop(T) ->
+  CurrentTime = time:now(),
   receive
-    %% Hunt for the most recent address message.
-    {recent_msg, Pid} ->
-      Pid ! most_recent_message(),
-      loop(State);
-    kill -> true
+    collision ->
+      %%stuff
+      loop(T - time:now());
+  after T ->
+      move(),
+      loop(T)
   end.
 
 
-sleep(T) ->
-  receive
-  after T -> true
-  end.
 
 
 most_recent_message() ->
