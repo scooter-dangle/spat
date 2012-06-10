@@ -4,28 +4,52 @@
 -record(region,
         { point = {0, 0},
           side_length,
-          neighbors,
+          neighbors = [],
           specks = [],
           particle_threshold,
           subdivision_counter }).
 
-print_row(Length) ->
-  X = 120,
-  Space = 32,
-  io:fwrite("|~*.*c|~n",[Length,Length,Space]).
+occuppied_char(true) -> 42; % Star
+occuppied_char(false) -> 32. % Space
 
-print_rows(0, _) -> ok;
-print_rows(Row_Count, Length) ->
-  print_row(Length),
-  print_rows(Row_Count - 1, Length).
+generate_row(0, Xs) ->
+  occuppied_char(lists:member(0, Xs));
+generate_row(Length, Xs) ->
+  %[ occuppied_char(lists:member(Length, Xs)) | generate_row(Length - 1, Xs) ].
+[generate_row(Length - 1, Xs) | [occuppied_char(lists:member(Length, Xs))]].
 
-box(Side) ->
+print_row(Length, []) ->
+  io:fwrite("|"),
+  io:fwrite("~*c", [Length, 32]),
+  io:fwrite("|~n");
+print_row(Length, Points) ->
+  io:fwrite("|"),
+  io:fwrite("~s", [generate_row(Length - 1, x_only_coordinates(Points))]),
+  io:fwrite("|~n").
+
+print_rows(0, Length, Points) ->
+  %io:fwrite("~w", [0]),
+  print_row(Length, points_for_row(0, Points));
+print_rows(Row_Count, Length, Points) ->
+  %io:fwrite("~w", [Row_Count]),
+  print_row(Length, points_for_row(Row_Count, Points)),
+  print_rows(Row_Count - 1, Length, Points).
+
+x_only_coordinates(Points) ->
+  lists:map(fun({_, {X,_}}) -> X end, Points).
+
+points_for_row(Y_Cor, Points) ->
+  lists:filter(fun({_, {_,Y}}) -> Y == Y_Cor end, Points).
+
+box(Side, Points) ->
   Dash = 45,
-  io:fwrite("+~*.*c+~n",[Side,Side,Dash]),
-  print_rows(Side, Side),
-  io:fwrite("+~*.*c+~n",[Side,Side,Dash]).
+  io:fwrite("+~*c+~n",[Side,Dash]),
+  print_rows(Side - 1, Side, Points),
+  io:fwrite("+~*c+~n",[Side,Dash]).
 
 broadcast(State) ->
+  Side_Length = State#region.side_length,
+  box(Side_Length, State#region.specks),
   io:format("~p~n", [State]).
 
 
@@ -50,7 +74,8 @@ loop(State) ->
       % Need to check here whether XY is already occupied.
       NewSpecks = [{spawn(speck, init, [Move, self()]), XY} |
         State#region.specks],
-      loop(State#region{specks=NewSpecks})
+      loop(State#region{specks=NewSpecks});
+    stop -> ok
   end.
 
 
