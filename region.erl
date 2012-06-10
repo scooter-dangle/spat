@@ -11,13 +11,26 @@
 
 occuppied_char(true) -> 42; % Star
 occuppied_char(false) -> 32. % Space
+% {
+%    points: [ [x, y, id], ... ],
+%    length: integer,
+%    width: integer,
+%    updates: [
+%     { time: counter,
+%       points: [ [new_x, new_y, id], [new_x, new_y, id], ...] },
+%    ]
+%  }
+start_json(Fd, Mat_Size, Points) ->
+  io:fwrite(Fd, "{", []),
+  io:format("~p~n", [Points]),
+  print_points_json(Fd, Points),
+  io:fwrite(Fd, ",length:~w,width:~w,updates:[", [Mat_Size, Mat_Size]).
 
 generate_row(0, Xs) ->
   occuppied_char(lists:member(0, Xs));
 generate_row(Length, Xs) ->
   %[ occuppied_char(lists:member(Length, Xs)) | generate_row(Length - 1, Xs) ].
 [generate_row(Length - 1, Xs) | [occuppied_char(lists:member(Length, Xs))]].
-
 print_row(Length, []) ->
   io:fwrite("|"),
   io:fwrite("~*c", [Length, 32]),
@@ -47,13 +60,80 @@ box(Side, Points) ->
   print_rows(Side - 1, Side, Points),
   io:fwrite("+~*c+~n",[Side,Dash]).
 
+
+log_update(Fd, Counter, Points) ->
+  case Counter of
+    0 -> io:fwrite(Fd, "{time:~w,", [Counter]);
+    _ -> io:fwrite(Fd, ",{time:~w,", [Counter])
+  end,
+  print_points_json(Fd, Points),
+  io:fwrite(Fd, "}", []).
+
+
+print_points_json(Fd, Points) ->
+  io:fwrite(Fd, "points:[",[]),
+  points_to_json(Fd, Points),
+  io:fwrite(Fd, "]",[]).
+
+
+points_to_json(Fd, []) -> ok;
+points_to_json(Fd, [{Pid, {X, Y}} | MorePoints]) ->
+  io:fwrite(Fd, "[~w,~w,\"~w\"]", [X, Y, Pid]),
+  case MorePoints of
+    [] -> ok;
+    _ -> io:fwrite(Fd, ",", [])
+  end,
+  points_to_json(Fd, MorePoints).
+
+
+close(Fd) ->
+  io:fwrite(Fd, "]}~n",[]),
+  file:close(Fd).
+
+
+char_or_space(empty) -> 32;
+char_or_space(point) -> 42.
+
+
+generate_mat(Size) ->
+  [{{X, Y}, empty} || X <- lists:seq(0, Size-1), Y <- lists:seq(0, Size-1)].
+
+
+populate_mat(Mat, []) -> Mat;
+populate_mat(Mat, [{_, XY} | MoreSpecks]) ->
+  populate_mat(lists:keyreplace(XY, 1, Mat, {XY, point}), MoreSpecks).
+
+
+as_string(Points) ->
+  [ char_or_space(Entry) || {_, Entry} <- Points].
+
+
+display_mat(Row_Length, []) -> ok;
+display_mat(Row_Length, Mat) ->
+  {Curr_Row, Remaining_Rows} = lists:split(Row_Length, Mat),
+  display_mat(Row_Length, Remaining_Rows),
+  io:fwrite("|~s|~n", [as_string(Curr_Row)]).
+
+
+% box(Side, Points) ->
+%   Dash = 45,
+%   io:fwrite("+~*c+~n",[Side,Dash]),
+%   display_mat(Side, populate_mat(generate_mat(Side), Points)),
+%   print_rows(Side - 1, Side, Points),
+%   io:fwrite("+~*c+~n",[Side,Dash]).
+
 broadcast(State, false) ->
-  Side_Length = State#region.side_length,
-  box(Side_Length, State#region.specks),
-  clear_screen(),
-  io:format("~p~n", [State]);
+  % Side_Length = State#region.side_length,
+  % box(Side_Length, State#region.specks),
+  % clear_screen(),
+  % io:format("~p~n", [State]);
+  ok;
 broadcast(State, Printer) ->
   Printer ! {update, State}.
+
+broadcast(State) ->
+  box(State#region.side_length, State#region.specks),
+  io:format("~p~n", [State]).
 
 clear_screen() -> clear_screen(130).
 
@@ -73,7 +153,7 @@ wait_on_neighbors(State, Printer) ->
 
 init(Filename, State, FullTime, TimeInterval) ->
   {ok, Fd} = file:open(Filename, [write]),
-  %start_json(Fd, State#region.side_length, State#region.specks),
+  start_json(Fd, State#region.side_length, State#region.specks),
   timer:send_after(TimeInterval, print_out),
   timer:send_after(FullTime, end_print),
   logger_loop(Fd, State, TimeInterval, 0).
@@ -83,11 +163,11 @@ logger_loop(Fd, State, TimeInterval, Counter) ->
   receive
     {update, NewState} -> logger_loop(Fd, NewState, TimeInterval, Counter);
     print_out ->
-      %log_update(Fd, Counter, State#region.specks),
+      log_update(Fd, Counter, State#region.specks),
       timer:send_after(TimeInterval, print_out),
       logger_loop(Fd, State, TimeInterval, Counter + 1);
     end_print -> 
-      % close(Fd),
+      close(Fd),
       io:format("File closed.~n")
   end.
 
