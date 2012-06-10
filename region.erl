@@ -9,42 +9,29 @@
           particle_threshold,
           subdivision_counter }).
 
-occuppied_char(true) -> 42; % Star
-occuppied_char(false) -> 32. % Space
+char_or_space(empty) -> 32;
+char_or_space(point) -> 42.
 
-generate_row(0, Xs) ->
-  occuppied_char(lists:member(0, Xs));
-generate_row(Length, Xs) ->
-  %[ occuppied_char(lists:member(Length, Xs)) | generate_row(Length - 1, Xs) ].
-[generate_row(Length - 1, Xs) | [occuppied_char(lists:member(Length, Xs))]].
+generate_mat(Size) ->
+  [{{X, Y}, empty} || X <- lists:seq(0, Size-1), Y <- lists:seq(0, Size-1)].
 
-print_row(Length, []) ->
-  io:fwrite("|"),
-  io:fwrite("~*c", [Length, 32]),
-  io:fwrite("|~n");
-print_row(Length, Points) ->
-  io:fwrite("|"),
-  io:fwrite("~s", [generate_row(Length - 1, x_only_coordinates(Points))]),
-  io:fwrite("|~n").
+populate_mat(Mat, []) -> Mat;
+populate_mat(Mat, [{_, XY} | MoreSpecks]) ->
+  populate_mat(lists:keyreplace(XY, 1, Mat, {XY, point}), MoreSpecks).
 
-print_rows(0, Length, Points) ->
-  %io:fwrite("~w", [0]),
-  print_row(Length, points_for_row(0, Points));
-print_rows(Row_Count, Length, Points) ->
-  %io:fwrite("~w", [Row_Count]),
-  print_row(Length, points_for_row(Row_Count, Points)),
-  print_rows(Row_Count - 1, Length, Points).
+as_string(Points) ->
+  [ char_or_space(Entry) || {_, Entry} <- Points].
 
-x_only_coordinates(Points) ->
-  lists:map(fun({_, {X,_}}) -> X end, Points).
-
-points_for_row(Y_Cor, Points) ->
-  lists:filter(fun({_, {_,Y}}) -> Y == Y_Cor end, Points).
+display_mat(Row_Length, []) -> ok;
+display_mat(Row_Length, Mat) ->
+  {Curr_Row, Remaining_Rows} = lists:split(Row_Length, Mat),
+  display_mat(Row_Length, Remaining_Rows),
+  io:fwrite("|~s|~n", [as_string(Curr_Row)]).
 
 box(Side, Points) ->
   Dash = 45,
   io:fwrite("+~*c+~n",[Side,Dash]),
-  print_rows(Side - 1, Side, Points),
+  display_mat(Side, populate_mat(generate_mat(Side), Points)),
   io:fwrite("+~*c+~n",[Side,Dash]).
 
 broadcast(State) ->
