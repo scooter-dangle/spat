@@ -9,18 +9,23 @@
           particle_threshold,
           subdivision_counter }).
 
+
 char_or_space(empty) -> 32;
 char_or_space(point) -> 42.
 
+
 generate_mat(Size) ->
   [{{X, Y}, empty} || X <- lists:seq(0, Size-1), Y <- lists:seq(0, Size-1)].
+
 
 populate_mat(Mat, []) -> Mat;
 populate_mat(Mat, [{_, XY} | MoreSpecks]) ->
   populate_mat(lists:keyreplace(XY, 1, Mat, {XY, point}), MoreSpecks).
 
+
 as_string(Points) ->
   [ char_or_space(Entry) || {_, Entry} <- Points].
+
 
 display_mat(Row_Length, []) -> ok;
 display_mat(Row_Length, Mat) ->
@@ -28,15 +33,16 @@ display_mat(Row_Length, Mat) ->
   display_mat(Row_Length, Remaining_Rows),
   io:fwrite("|~s|~n", [as_string(Curr_Row)]).
 
+
 box(Side, Points) ->
   Dash = 45,
   io:fwrite("+~*c+~n",[Side,Dash]),
   display_mat(Side, populate_mat(generate_mat(Side), Points)),
   io:fwrite("+~*c+~n",[Side,Dash]).
 
+
 broadcast(State) ->
-  Side_Length = State#region.side_length,
-  box(Side_Length, State#region.specks),
+  box(State#region.side_length, State#region.specks),
   io:format("~p~n", [State]).
 
 
