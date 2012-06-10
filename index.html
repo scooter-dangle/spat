@@ -1,0 +1,27 @@
+<html>
+  <head>
+    <title>Particle Simulation</title>
+    <script type="text/javascript" src="http://code.jquery.com/jquery-1.7.2.js"></script>
+    <script type="text/javascript" src="3rd_party/processing-1.3.6.js"></script>
+    <script type="text/javascript" src="fleem.json"></script>
+    <script type="text/javascript" src="particle_sim.js"></script>
+    <style type="text/css">
+      .controls {
+          float: right;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="mainCanvas"></canvas>
+    <script type="text/javascript">
+      var canvas = document.getElementById("mainCanvas");
+      // attaching the sketchProc function to the canvas
+      var processingInstance = new Processing(canvas, setupProcessingInstance(sampleInput));
+      </script>
+    <div class="controls">
+      <div class="entry">Speed: <input type="text" id="speed" value="50"></input> updates/sec</div>
+      <div class="display">Elapsed logical time: <span id="elapsed"></span></div>
+      <div class="display">Points: <span id="points"></span></div>
+    </div>
+  </body>
+</html>
