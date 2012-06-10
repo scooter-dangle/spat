@@ -33,7 +33,7 @@ loop(State) ->
       ok;
     {new_speck, Move, XY} ->
       % Need to check here whether XY is already occupied.
-      NewSpecks = [{spawn(speck, loop, [Move, self()]), XY} |
+      NewSpecks = [{spawn(speck, init, [Move, self()]), XY} |
         State#region.specks],
       loop(State#region{specks=NewSpecks})
   end.

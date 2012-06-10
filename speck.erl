@@ -4,14 +4,19 @@
 -record(move, {slope, dir, state, time}).
 
 
-loop(Move, Region) ->
+init(Move, Region) ->
   timer:send_after(Move#move.time, move),
+  loop(Move, Region).
+
+
+loop(Move, Region) ->
   receive
     collision ->
       loop(switch_sign(Move), Region);
     move ->
       {MoveMsg, NewMove} = move(Move),
       Region ! {move, self(), MoveMsg},
+      timer:send_after(Move#move.time, move),
       loop(NewMove, Region)
   end.
 
