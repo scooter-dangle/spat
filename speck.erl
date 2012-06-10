@@ -4,18 +4,18 @@
 -record(move, {slope, dir, state, time}).
 
 
-move(Move=#move{Slope=slope, SlopeSign=dir, {0, 0}=state}) ->
+move(#move{slope=Slope, state={0,0}}=Move) ->
   move(Move#move{state=Slope});
 
-move(Move=#move{{_, YSign}=dir, {0, Y}=state}) ->
+move(#move{dir={_, YSign}, state={0, Y}}=Move) ->
   { {y, YSign}, Move#move{state={0, Y-1}} };
 
-move(Move=#move{{XSign, _}=dir, {X, Y}=state}) ->
+move(#move{dir={XSign, _}, state={X, Y}}=Move) ->
   { {x, XSign}, Move#move{state={X-1, Y}} }.
 
 
-switch_sign(#move{sign={X, Y}} = Move) ->
-  Move#move{sign={X * -1, Y * -1}}.
+switch_sign(#move{dir={X, Y}} = Move) ->
+  Move#move{dir={X * -1, Y * -1}}.
 
  
 loop(Move, WaitTime, Region) ->
@@ -24,7 +24,8 @@ loop(Move, WaitTime, Region) ->
     collision ->
       loop(switch_sign(Move), WaitTime, Region);
     move ->
-      {Msg, NewMove#move{}} = move(Move),
+      {Msg, NewMove} = move(Move),
       Region ! Msg,
       loop(NewMove, WaitTime, Region)
   end.
+
