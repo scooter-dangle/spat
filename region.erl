@@ -10,28 +10,32 @@
           subdivision_counter }).
 
 
+broadcast(State) ->
+  io:format("~p~n", [State]).
+
+
 loop(State) ->
+  broadcast(State),
   receive
     {move, Pid, Direction} ->
       {_, XY} = find_particle(Pid, State#region.specks),
       NewXY = new_xy(XY, Direction),
       case in_self(NewXY, State) of
         true ->
-          case internal_collision(NewXY, State#region.specks) of
-            false ->
-              NewSpecks = lists:keyreplace(Pid, 1,
-                State#region.specks, {Pid, NewXY}),
-              loop(State#region{specks=NewSpecks});
-            {OtherSpeck, OtherXY} ->
-              OtherSpeck ! Pid ! collision
-          end;
+          NewSpecks = internal_update({Pid, NewXY}, State#region.specks),
+          loop(State#region{specks=NewSpecks});
         false ->
           % Implement later: send external_speck speck request to neighbor
           Pid ! collision,
           loop(State)
       end;
     {external_speck, RegionPid, SpeckPid, XY} ->
-      ok
+      ok;
+    {new_speck, Move, XY} ->
+      % Need to check here whether XY is already occupied.
+      NewSpecks = [{spawn(speck, loop, [Move, self()]), XY} |
+        State#region.specks],
+      loop(State#region{specks=NewSpecks})
   end.
 
 
@@ -51,6 +55,17 @@ in_self({X, Y},
 
 internal_collision(NewXY, Specks) ->
   lists:keyfind(NewXY, 2, Specks).
+
+
+internal_update({Pid, NewXY}, Specks) ->
+  Collision = internal_collision(NewXY, Specks),
+  internal_update(Collision, {Pid, NewXY}, Specks).
+
+internal_update(false, {Pid, NewXY}, Specks) ->
+  lists:keyreplace(Pid, 1, Specks, {Pid, NewXY});
+internal_update({OtherPid, OtherXY}, {Pid, NewXY}, Specks) ->
+  OtherPid ! Pid ! collision,
+  Specks.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

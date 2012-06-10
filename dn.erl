@@ -1,48 +1,28 @@
 -module(dn).
 -compile(export_all).
 
--record(speck, {pid, xy, move = #move{}}).
+-record(move, {slope, dir, state, time}).
+
+-record(region,
+        { point = {0, 0},
+          side_length,
+          neighbors,
+          specks = [],
+          particle_threshold,
+          subdivision_counter }).
 
 
-
-
-internal_collision(_, []) -> false;
-internal_collision(NewXY, SpeckList) ->
-  lists:keyfind(NewXY, 2, SpeckList).
-
-internal_update(false, {Pid, NewXY}, SpeckList) ->
-  lists:keyreplace(Pid, 1, SpeckList, {Pid, NewXY});
-
-internal_update({OtherPid, OtherXY}, {Pid, NewXY}, SpeckList) ->
-  OtherPid ! Pid ! collision,
-  SpeckList.
-
-
-
-
-most_recent_message() ->
-  RefTup = {ref, make_ref()},
-  self() ! RefTup,
-  receive
-    RefTup -> false;
-    Message ->
-      most_recent_message(RefTup, [Message])
-  end.
-
-
-most_recent_message(RefTup, MsgCache=[MostRecentMsg|TheRest]) ->
-  receive
-    RefTup ->
-      sendBack(TheRest),
-      MostRecentMsg;
-    Message ->
-      most_recent_message(RefTup, [Message|MsgCache])
-  end.
-
-
-sendBack([]) -> ok;
-sendBack([H|T]) ->
-  self() ! H,
-  sendBack(T).
-
+foo() ->
+  RegionState = #region{ point = {0, 0},
+                         side_length = 16,
+                         neighbors = [],
+                         specks = [],
+                         particle_threshold = 10,
+                         subdivision_counter = 3 },
+  Region = spawn(region, loop, [RegionState]),
+  SpeckState = #move{ slope = {2, 1},
+                      dir   = {1, -1},
+                      state = {0, 0},
+                      time  = 1500 },
+  Region ! {new_speck, SpeckState, {2, 2}}.
 
