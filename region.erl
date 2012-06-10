@@ -14,19 +14,29 @@ broadcast(State) ->
   io:format("~p~n", [State]).
 
 
+wait_on_neighbors(State) ->
+  broadcast(State),
+  receive
+    {hello, Neighbor} ->
+      NewState = fleem,
+      wait_on_neighbors(NewState);
+    neighborhood_ready -> loop(State)
+  end.
+
+
 loop(State) ->
   broadcast(State),
   receive
-    {move, Pid, Direction} ->
+    {move, Pid, Direction={Axis, _}} ->
       {_, XY} = find_particle(Pid, State#region.specks),
       NewXY = new_xy(XY, Direction),
       case in_self(NewXY, State) of
         true ->
-          NewSpecks = internal_update({Pid, NewXY}, State#region.specks),
+          NewSpecks = internal_update({Pid, NewXY}, State#region.specks, Axis),
           loop(State#region{specks=NewSpecks});
         false ->
           % Implement later: send external_speck speck request to neighbor
-          Pid ! collision,
+          Pid ! {collision, Axis},
           loop(State)
       end;
     {external_speck, RegionPid, SpeckPid, XY} ->
@@ -60,14 +70,14 @@ internal_collision(NewXY, Specks) ->
   lists:keyfind(NewXY, 2, Specks).
 
 
-internal_update({Pid, NewXY}, Specks) ->
+internal_update({Pid, NewXY}, Specks, Axis) ->
   Collision = internal_collision(NewXY, Specks),
-  internal_update(Collision, {Pid, NewXY}, Specks).
+  internal_update(Collision, {Pid, NewXY}, Specks, Axis).
 
-internal_update(false, {Pid, NewXY}, Specks) ->
+internal_update(false, {Pid, NewXY}, Specks, _) ->
   lists:keyreplace(Pid, 1, Specks, {Pid, NewXY});
-internal_update({OtherPid, OtherXY}, {Pid, NewXY}, Specks) ->
-  OtherPid ! Pid ! collision,
+internal_update({OtherPid, OtherXY}, {Pid, NewXY}, Specks, Axis) ->
+  OtherPid ! Pid ! {collision, Axis},
   Specks.
 
 kill_specks([]) -> ok;
