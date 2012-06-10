@@ -17,7 +17,9 @@ loop(Move, Region) ->
       {MoveMsg, NewMove} = move(Move),
       Region ! {move, self(), MoveMsg},
       timer:send_after(Move#move.time, move),
-      loop(NewMove, Region)
+      loop(NewMove, Region);
+    kill ->
+      ok
   end.
 
 

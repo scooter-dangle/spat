@@ -35,7 +35,10 @@ loop(State) ->
       % Need to check here whether XY is already occupied.
       NewSpecks = [{spawn(speck, init, [Move, self()]), XY} |
         State#region.specks],
-      loop(State#region{specks=NewSpecks})
+      loop(State#region{specks=NewSpecks});
+    kill ->
+      kill_specks(State#region.specks),
+      ok
   end.
 
 
@@ -66,6 +69,11 @@ internal_update(false, {Pid, NewXY}, Specks) ->
 internal_update({OtherPid, OtherXY}, {Pid, NewXY}, Specks) ->
   OtherPid ! Pid ! collision,
   Specks.
+
+kill_specks([]) -> ok;
+kill_specks([{Speck, _} | TheRest ]) ->
+  Speck ! kill,
+  kill_specks(TheRest).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

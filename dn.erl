@@ -24,5 +24,6 @@ foo() ->
                       dir   = {1, -1},
                       state = {0, 0},
                       time  = 1500 },
-  Region ! {new_speck, SpeckState, {2, 2}}.
+  Region ! {new_speck, SpeckState, {2, 2}},
+  Region.
 
