@@ -9,6 +9,50 @@
           particle_threshold,
           subdivision_counter }).
 
+% {
+%    points: [ [x, y, id], ... ],
+%    length: integer,
+%    width: integer,
+%    updates: [
+%     { time: counter,
+%       points: [ [new_x, new_y, id], [new_x, new_y, id], ...] },
+%    ]
+%  }
+start_json(Fd, Mat_Size, Points) ->
+  io:fwrite(Fd, "{", []),
+  print_points_json(Fd, Points),
+  io:fwrite(Fd, ",length:~w,width:~w,updates:[", [Mat_Size, Mat_Size]).
+
+
+log_update(Fd, Counter, Points) ->
+  case Counter of
+    0 -> io:fwrite(Fd, "{time:~w,", [Counter]);
+    _ -> io:fwrite(Fd, ",{time:~w,", [Counter])
+  end,
+  print_points_json(Fd, Points),
+  io:fwrite(Fd, "}", []).
+
+
+print_points_json(Fd, Points) ->
+  io:fwrite(Fd, "points:[",[]),
+  points_to_json(Fd, Points),
+  io:fwrite(Fd, "]",[]).
+
+
+points_to_json(Fd, []) -> ok;
+points_to_json(Fd, [{Pid, {X, Y}} | MorePoints]) ->
+  io:fwrite(Fd, "[~w,~w,\"~w\"]", [X, Y, Pid]),
+  case MorePoints of
+    [] -> ok;
+    [_] -> io:fwrite(Fd, ",", [])
+  end,
+  points_to_json(Fd, MorePoints).
+
+
+close(Fd) ->
+  io:fwrite(Fd, "]}~n",[]),
+  file:close(Fd).
+
 
 char_or_space(empty) -> 32;
 char_or_space(point) -> 42.
