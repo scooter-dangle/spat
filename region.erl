@@ -9,6 +9,21 @@
           particle_threshold,
           subdivision_counter }).
 
+print_row(Length) ->
+  X = 120,
+  Space = 32,
+  io:fwrite("|~*.*c|~n",[Length,Length,Space]).
+
+print_rows(0, _) -> ok;
+print_rows(Row_Count, Length) ->
+  print_row(Length),
+  print_rows(Row_Count - 1, Length).
+
+box(Side) ->
+  Dash = 45,
+  io:fwrite("+~*.*c+~n",[Side,Side,Dash]),
+  print_rows(Side, Side),
+  io:fwrite("+~*.*c+~n",[Side,Side,Dash]).
 
 broadcast(State) ->
   io:format("~p~n", [State]).
