@@ -18,14 +18,14 @@ switch_sign(#move{dir={X, Y}} = Move) ->
   Move#move{dir={X * -1, Y * -1}}.
 
  
-loop(Move, WaitTime, Region) ->
-  timer:send_after(WaitTime, move),
+loop(Move, Region) ->
+  timer:send_after(Move#move.time, move),
   receive
     collision ->
-      loop(switch_sign(Move), WaitTime, Region);
+      loop(switch_sign(Move), Region);
     move ->
-      {Msg, NewMove} = move(Move),
-      Region ! Msg,
-      loop(NewMove, WaitTime, Region)
+      {MoveMsg, NewMove} = move(Move),
+      Region ! {move, self(), MoveMsg},
+      loop(NewMove, Region)
   end.
 
