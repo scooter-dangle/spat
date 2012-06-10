@@ -5,8 +5,6 @@
 
 
 
-in_self(NewXY, #region{Origin=point, SideLength=side_length}) ->
-  .
 
 internal_collision(_, []) -> false;
 internal_collision(NewXY, SpeckList) ->
@@ -19,8 +17,6 @@ internal_update({OtherPid, OtherXY}, {Pid, NewXY}, SpeckList) ->
   OtherPid ! Pid ! collision,
   SpeckList.
 
-new_xy({X, Y}, x, Sign) -> {X + Sign, Y};
-new_xy({X, Y}, y, Sign) -> {X, Y + Sign}.
 
 
 

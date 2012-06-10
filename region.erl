@@ -14,6 +14,10 @@ loop(State) ->
     {move, Pid, Direction} ->
       {_, XY} = find_particle(Pid, State#region.particles),
       NewXY = new_xy(XY, Direction),
+      case in_self(NewXY, State) of
+        true -> ok;
+        false -> 
+      end
       % if NewXY in self then check internal_collision
       %   if no collision, update particle coordinate
       %   else notify_particles of collision
@@ -30,7 +34,7 @@ new_xy({X, Y}, {y, Sign}) -> {X, Y + Sign}.
 
 
 in_self(NewXY={X, Y},
-        #region{point={OriginX, OriginY}, side_length=SideLength}) ->
+    #region{point={OriginX, OriginY}, side_length=SideLength}) ->
   (X < OriginX + SideLength andalso Y < OriginY + SideLength)
     andalso (X >= OriginX andalso Y >= OriginY).
 
