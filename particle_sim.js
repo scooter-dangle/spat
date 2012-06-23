@@ -6,6 +6,8 @@ function currentSpeed() {
 
 function applyPoints(dataById, points) {
     $.each(points, function(index, value) {
+        var old = dataById[value[2]];
+        value['prev'] = old;
         dataById[value[2]] = value;
     });
 }
@@ -13,7 +15,7 @@ function applyPoints(dataById, points) {
 function setupProcessingInstance(data) {
     var sketchProc = function (processing) {
         var assumedFrameRate = 60;
-        var scaleFactor = 10;
+        var scaleFactor = 2;
 
         // Internal data structures--key is id, value is [x, y, id]
         var dataById = {};
@@ -52,6 +54,11 @@ function setupProcessingInstance(data) {
                 processing.noStroke();
                 var point = dataById[id];
                 processing.ellipse(point[0], point[1], 0.5, 0.5);
+                if (point['prev'] !== undefined) {
+//                    processing.stroke(32);
+//                    processing.strokeWeight(0.025);
+//                    processing.line(point[0],point[1], point.prev[0], point.prev[1]);
+                }
             }
             $("#points").text(JSON.stringify(dataById));
             $("#elapsed").text(elapsedLogicalTime.toFixed(5));
